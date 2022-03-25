@@ -1,8 +1,8 @@
 package = "web"
- version = "0.2.5-1"
+ version = "0.2.6-1"
  source = {
     url = "git+https://github.com/epicfilemcnulty/lua-web.git",
-    tag = "v0.2.5"
+    tag = "v0.2.6"
  }
  description = {
     summary = "Module for working with web requests",

@@ -188,12 +188,12 @@ local function request(uri, httpOpts, timeout, use_luasocket)
 	httpDefaults.scheme = parsedUrl.scheme
 	httpDefaults.path = parsedUrl.path
 	httpDefaults.query = parsedUrl.query
-	local httpOpts = std.mergeTables(httpDefaults, httpOpts)
+	local httpOpts = std.merge_tables(httpDefaults, httpOpts)
 
-	if std.moduleAvailable("resty.http") and not use_luasocket then
+	if std.module_available("resty.http") and not use_luasocket then
 		local results, err = requestResty(httpOpts, { port = port, timeout = timeout, address = server })
 		return results, err
-	elseif std.moduleAvailable("socket.http") then
+	elseif std.module_available("socket.http") then
 		httpOpts.url = uri
 		if httpOpts.scheme == "unix" then
 			httpOpts.url = nil
