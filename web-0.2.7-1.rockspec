@@ -1,8 +1,8 @@
 package = "web"
- version = "0.2.6-1"
+ version = "0.2.7-1"
  source = {
     url = "git+https://github.com/epicfilemcnulty/lua-web.git",
-    tag = "v0.2.6"
+    tag = "v0.2.7"
  }
  description = {
     summary = "Module for working with web requests",
@@ -21,7 +21,7 @@ package = "web"
  }
  dependencies = {
     "lua >= 5.1",
-    "deviant >= 1.0.1"
+    "deviant >= 2.1.0"
  }
  build = {
     type = "builtin",

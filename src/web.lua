@@ -1,6 +1,6 @@
 local std = require("deviant")
 
-local _M = { version = "0.2.5" }
+local _M = { version = "0.2.7" }
 
 local url = {}
 
@@ -36,38 +36,38 @@ url.escape = function(str)
 end
 
 url.build = function(url)
-	local urlString = ""
+	local url_string = ""
 	if url.scheme then
 		if url.scheme == "unix" and url.socket then
-			urlString = url.scheme .. ":" .. url.socket
+			url_string = url.scheme .. ":" .. url.socket
 			-- don't forget to remove that 'http:' part from the path
 			if url.path then
-				urlString = urlString .. ":" .. string.sub(url.path, 6)
+				url_string = url_string .. ":" .. string.sub(url.path, 6)
 			end
 			if url.query then
-				urlString = urlString .. "?" .. url.query
+				url_string = url_string .. "?" .. url.query
 			end
 		else
 			if url.host then
-				urlString = url.scheme .. "://" .. url.host
+				url_string = url.scheme .. "://" .. url.host
 			end
 			if url.port then
-				urlString = urlString .. ":" .. url.port
+				url_string = url_string .. ":" .. url.port
 			end
 			if url.path then
-				urlString = urlString .. url.path
+				url_string = url_string .. url.path
 			end
 			if url.query then
-				urlString = urlString .. "?" .. url.query
+				url_string = url_string .. "?" .. url.query
 			end
 		end
 	else
-		urlString = nil
+		url_string = nil
 	end
-	return urlString
+	return url_string
 end
 
-local function newAPI()
+local function new_api()
 	local api
 	api = {
 		actions = { ["nop"] = { action = function() end, pattern = "" } },
@@ -90,19 +90,19 @@ local function newAPI()
 	return api
 end
 
-local function requestResty(request, connectionOpts)
+local function request_resty(request, connection)
 	local http = require("resty.http")
 	local httpc = http.new()
-	httpc:set_timeout(connectionOpts.timeout)
+	httpc:set_timeout(connection.timeout)
 
 	local ok, err
 	if request.scheme ~= "unix" then
-		ok, err = httpc:connect(connectionOpts.address, connectionOpts.port)
+		ok, err = httpc:connect(connection.address, connection.port)
 		if request.scheme == "https" then
 			httpc:ssl_handshake(nil, request.headers["Host"], request.ssl_verify)
 		end
 	else
-		ok, err = httpc:connect(connectionOpts.address)
+		ok, err = httpc:connect(connection.address)
 	end
 	if not ok then
 		return nil, err
@@ -123,7 +123,7 @@ local function requestResty(request, connectionOpts)
 	return nil, err
 end
 
-local function requestSocket(request, timeout)
+local function request_socket(request, timeout)
 	local http, unix
 	local ltn12 = require("ltn12")
 
@@ -146,7 +146,7 @@ local function requestSocket(request, timeout)
 		request.source = ltn12.source.string(request.body)
 	end
 
-	local result, status, headers, statusLine = http.request(request)
+	local result, status, headers, status_line = http.request(request)
 
 	if result == 1 then
 		return { body = table.concat(body), status = status, headers = headers }
@@ -155,57 +155,57 @@ local function requestSocket(request, timeout)
 	end
 end
 
-local function request(uri, httpOpts, timeout, use_luasocket)
+local function request(uri, options, timeout, use_luasocket)
 	local timeout = timeout or 1000 -- default timeout is 1 second
 	local port = 80 -- default port (will be changed to 443 if the scheme is https, also you can override this in the uri)
 	local server -- the actual server to connect to
 	local use_luasocket = use_luasocket or false -- an option to force using luasocket when both lua-resty-http and luasocket available
 
-	-- These are the defaults if no httpOpts table provided in the args.
+	-- These are the defaults if no options table provided in the args.
 	-- Even if there is one, but, say, it lacks the method field, then GET
 	-- method will be used.
-	local httpDefaults = { method = "GET", body = "", headers = {}, ssl_verify = false }
+	local defaults = { method = "GET", body = "", headers = {}, ssl_verify = false }
 
-	local parsedUrl = url.parse(uri)
+	local parsed_url = url.parse(uri)
 
-	if parsedUrl.scheme == "unix" then
-		server = "unix:" .. parsedUrl.socket
+	if parsed_url.scheme == "unix" then
+		server = "unix:" .. parsed_url.socket
 		--[[ 'localhost' is a reasonable default for the Host header
              when connecting to a unix socket. Anyways it can be overriden
-             in the httpOpts table                  ]]
+             in the options table                  ]]
 		--
-		httpDefaults.headers["Host"] = "localhost"
+		defaults.headers["Host"] = "localhost"
 	else
-		server = parsedUrl.host
-		httpDefaults.headers["Host"] = parsedUrl.host
-		if parsedUrl.port then
-			port = parsedUrl.port
-		elseif parsedUrl.scheme == "https" then
+		server = parsed_url.host
+		defaults.headers["Host"] = parsed_url.host
+		if parsed_url.port then
+			port = parsed_url.port
+		elseif parsed_url.scheme == "https" then
 			port = 443
 		end
 	end
 
-	httpDefaults.scheme = parsedUrl.scheme
-	httpDefaults.path = parsedUrl.path
-	httpDefaults.query = parsedUrl.query
-	local httpOpts = std.merge_tables(httpDefaults, httpOpts)
+	defaults.scheme = parsed_url.scheme
+	defaults.path = parsed_url.path
+	defaults.query = parsed_url.query
+	local options = std.merge_tables(defaults, options)
 
 	if std.module_available("resty.http") and not use_luasocket then
-		local results, err = requestResty(httpOpts, { port = port, timeout = timeout, address = server })
+		local results, err = request_resty(options, { port = port, timeout = timeout, address = server })
 		return results, err
 	elseif std.module_available("socket.http") then
-		httpOpts.url = uri
-		if httpOpts.scheme == "unix" then
-			httpOpts.url = nil
-			httpOpts.host = parsedUrl.socket
+		options.url = uri
+		if options.scheme == "unix" then
+			options.url = nil
+			options.host = parsed_url.socket
 		end
-		local results, err = requestSocket(httpOpts, timeout / 1000)
+		local results, err = request_socket(options, timeout / 1000)
 		return results, err
 	end
 end
 
 _M.url = url
 _M.request = request
-_M.newAPI = newAPI
+_M.new_api = new_api
 
 return _M
