@@ -1,6 +1,6 @@
 local std = require("deviant")
 
-local _M = { version = "0.2.7" }
+local _M = { version = "0.3.0" }
 
 local url = {}
 
