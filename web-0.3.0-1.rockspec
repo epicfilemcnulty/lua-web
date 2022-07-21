@@ -21,7 +21,7 @@ package = "web"
  }
  dependencies = {
     "lua >= 5.1",
-    "epicfilemcnulty/deviant >= 2.2.0"
+    "deviant >= 2.2.0"
  }
  build = {
     type = "builtin",
